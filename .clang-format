@@ -1,0 +1,24 @@
+BasedOnStyle: Microsoft
+UseTab: Never
+TabWidth: 4
+IndentWidth: 4
+AccessModifierOffset: -4
+ColumnLimit: 120
+
+AlignAfterOpenBracket: Align
+AlignEscapedNewlines: Left
+AlignTrailingComments: true
+
+AlwaysBreakTemplateDeclarations: true
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: false
+
+BreakConstructorInitializers: BeforeComma
+BreakBeforeBraces: Attach
+
+IndentCaseLabels: false
+FixNamespaceComments: true
+
+# Force pointers to the type for C++.
+DerivePointerAlignment: false
+PointerAlignment: Left
