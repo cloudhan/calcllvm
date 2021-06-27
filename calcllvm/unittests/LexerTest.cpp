@@ -77,3 +77,11 @@ TEST(LexerTest, complex) {
     EXPECT_EQ(lexer.next(), Token(TokenKind::R_PARAN, ")"));
     EXPECT_EQ(lexer.next(), Token(TokenKind::EOI));
 }
+
+TEST(LexerTest, endless) {
+    auto text = "";
+    auto lexer = Lexer(text);
+    EXPECT_EQ(lexer.next(), Token(TokenKind::EOI));
+    EXPECT_EQ(lexer.next(), Token(TokenKind::EOI));
+    EXPECT_EQ(lexer.next(), Token(TokenKind::EOI));
+}
