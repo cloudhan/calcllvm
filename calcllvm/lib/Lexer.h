@@ -13,8 +13,7 @@
 #include <llvm/ADT/StringRef.h>
 #include <llvm/Support/MemoryBuffer.h>
 
-enum class TokenKind : uint8_t
-{
+enum class TokenKind : uint8_t {
     EOI, // end of input
     UNKNOWN,
     INT_LITERAL,

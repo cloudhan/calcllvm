@@ -58,8 +58,8 @@ Token Lexer::next() {
     }
 
     switch (*bufferCurr) {
-#define CASE(c, kind) \
-    case (c):         \
+#define CASE(c, kind)                                                                                                  \
+    case (c):                                                                                                          \
         return formToken(bufferCurr + 1, (kind));
 
         CASE('+', TokenKind::OP_PLUS);

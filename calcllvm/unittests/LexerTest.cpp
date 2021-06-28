@@ -27,11 +27,11 @@ TEST(LexerTest, one_token) {
 }
 
 TEST(LexerTest, two_tokens) {
-#define EXPECT_EQ_5(src, kind1, text1, kind2, text2)      \
-    [&]() {                                               \
-        auto lexer = Lexer(src);                          \
-        EXPECT_EQ(lexer.next(), Token((kind1), (text1))); \
-        EXPECT_EQ(lexer.next(), Token((kind2), (text2))); \
+#define EXPECT_EQ_5(src, kind1, text1, kind2, text2)                                                                   \
+    [&]() {                                                                                                            \
+        auto lexer = Lexer(src);                                                                                       \
+        EXPECT_EQ(lexer.next(), Token((kind1), (text1)));                                                              \
+        EXPECT_EQ(lexer.next(), Token((kind2), (text2)));                                                              \
     }();
 
     EXPECT_EQ_5("123 1.23", TokenKind::INT_LITERAL, "123", TokenKind::FP_LITERAL, "1.23");
