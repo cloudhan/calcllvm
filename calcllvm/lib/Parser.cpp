@@ -63,6 +63,7 @@ Expr* Parser::parseTerm() {
     Expr* ret = parseFactor();
     if (token.is(TokenKind::OP_FACT)) {
         ret = new UnaryOp(UnaryOp::FACT, ret);
+        advance();
     } else if (token.isOneOf(TokenKind::OP_POW, TokenKind::OP_MUL, TokenKind::OP_DIV, TokenKind::OP_MOD)) {
         BinaryOp::Op op_kind{};
         switch (token.kind) {
@@ -120,13 +121,14 @@ Expr* Parser::parseNumber() {
     Expr* ret;
     if (token.is(TokenKind::FP_LITERAL)) {
         ret = new Number(Number::FLOAT, token.text);
+        advance();
     } else if (token.is(TokenKind::INT_LITERAL)) {
         ret = new Number(Number::INT, token.text);
+        advance();
     } else {
         error();
         ret = nullptr;
     }
-    advance();
     return ret;
 }
 
