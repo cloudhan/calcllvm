@@ -13,9 +13,8 @@ class Parser {
     bool expect(TokenKind kind) const;
     bool isBuiltinFuncName(llvm::StringRef) const;
 
-    AST* parseLang();
     Expr* parseExpr();
-    Expr* parseTerm();
+    Expr* parseTerm(int precedence);
     Expr* parseFactor();
     Expr* parseFuncCall();
     Expr* parseNumber();

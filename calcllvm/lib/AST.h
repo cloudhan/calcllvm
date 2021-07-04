@@ -8,26 +8,23 @@
  *  - abs
  *  - exp, log2, lg, ln,
  *  - sin, cos, tan, cot, arcsin, arccos, arctan, arccot,
+ *  - sqrt,
  *
  * Grammar:
  *
- *  expr := term | '+' term | '-' term | term '+' term | term '-' term
+ *  expr := term(0)
  *
- *  term := factor
- *        | factpr '!'
- *        | factor '^' factor
- *        | factor '*' factor
- *        | factor '/' factor
- *        | factor '%' factor
+ *  term(p) := factpr { binary_op term(q) }
  *
- *  factor := '(' expr ')'
+ *  factor := unary_op term(q)
+ *          | '(' expr ')'
+ *          | ident
  *          | func_call
- *          | IDENT
  *          | number
  *
- *  func_call := IDENT '(' expr ')'
+ *  func_call := ident '(' expr ')'
  *
- *  number := FP_LITERAL | INT_LITERAL
+ *  number := fp_literal | int_literal
  */
 
 class AST;
