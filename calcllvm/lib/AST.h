@@ -57,7 +57,7 @@ public:
 
 class Expr : public AST {
 public:
-    void accept(ASTVisitor& v) override {
+    void accept(ASTVisitor&) override {
         throw std::runtime_error("visitor should properly implement all required visit functions");
     };
 };

@@ -71,6 +71,8 @@ int getPrecedence(Token token, bool binary = true) {
             return 5;
         case TokenKind::OP_FACT:
             return 3;
+        default:
+            return -1;
         }
     }
 }
