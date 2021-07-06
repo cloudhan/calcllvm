@@ -10,15 +10,21 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
-    Lexer lexer(argv[1]);
-    Parser parser(lexer);
-    auto ast = parser.parse();
-    InterpretVisitor eval;
-    ast->accept(eval);
+    try {
+        Lexer lexer(argv[1]);
+        Parser parser(lexer);
+        auto ast = parser.parse();
+        InterpretVisitor eval;
+        ast->accept(eval);
 
-    if (eval.eval_result.isInt()) {
-        std::cout << eval.eval_result.getInt() << std::endl;
-    } else {
-        std::cout << eval.eval_result.getFloat() << std::endl;
+        if (eval.eval_result.isInt()) {
+            std::cout << eval.eval_result.getInt() << std::endl;
+        } else {
+            std::cout << eval.eval_result.getFloat() << std::endl;
+        }
+        return 0;
+    } catch (std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return -1;
     }
 }

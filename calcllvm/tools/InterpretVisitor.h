@@ -7,6 +7,19 @@
 #include <limits>
 #include <unordered_map>
 
+int64_t pow_(int64_t b, int64_t e) {
+    if (e == 1)
+        return b;
+
+    if ((e % 2) == 0) {
+        auto r = pow_(b, e / 2);
+        return r * r;
+    } else {
+        auto r = pow_(b, e / 2);
+        return r * r * b;
+    }
+}
+
 int64_t pow(int64_t b, int64_t e) {
     if (b == 0 && e == 0)
         throw std::runtime_error("0^0 is undefined");
@@ -16,16 +29,8 @@ int64_t pow(int64_t b, int64_t e) {
 
     if (b == 0)
         return 1;
-    if (e == 1)
-        return b;
 
-    if ((e % 2) == 0) {
-        auto r = pow(b, e / 2);
-        return r * r;
-    } else {
-        auto r = pow(b, e / 2);
-        return r * r * b;
-    }
+    return pow_(b, e);
 }
 
 class Value {
