@@ -23,6 +23,18 @@ TEST(ParserTest, number) {
 #undef DO_TEST
 }
 
+TEST(ParserTest, ident) {
+    auto text = "x";
+    Lexer lexer(text);
+    Parser parser(lexer);
+    auto e = parser.parse();
+    EXPECT_NE(e, nullptr);
+    auto n = dynamic_cast<Factor*>(e);
+    EXPECT_NE(n, nullptr);
+    EXPECT_EQ(n->getKind(), Factor::IDENT);
+    EXPECT_TRUE(n->getValueLiteralStr().equals(text));
+}
+
 TEST(ParserTest, unary_op) {
 #define DO_TEST(text, op, sexpr)                                                                                       \
     [&]() {                                                                                                            \

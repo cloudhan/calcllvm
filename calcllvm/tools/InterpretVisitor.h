@@ -161,11 +161,17 @@ public:
         auto it = env.find(ident);
         if (it == env.end()) {
             std::array<char, 256> buffer{};
-            scanf(buffer.data(), "%256s");
-            Lexer lexer(llvm::StringRef(buffer.data()));
-            auto tok = lexer.next();
-            Value v =
-                tok.is(TokenKind::FP_LITERAL) ? Value(std::stod(tok.text.str())) : Value(std::stoll(tok.text.str()));
+            std::fill(buffer.begin(), buffer.end(), 0);
+            printf("Input value %s: ", ident.c_str());
+            scanf("%256s", buffer.data());
+            auto it = std::find(buffer.begin(), buffer.end(), '.');
+            Value v;
+            if (it == buffer.end()) {
+                v = std::atoll(buffer.data());
+            }
+            else {
+                v = std::stod(buffer.data());
+            }
 
             env[ident] = v;
             eval_result = v;
