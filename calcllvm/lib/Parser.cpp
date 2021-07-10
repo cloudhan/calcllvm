@@ -98,6 +98,8 @@ Expr* Parser::parseTerm(int precedence) {
                 CASE(TokenKind::OP_POW, BinaryOp::POW);
                 CASE(TokenKind::OP_MOD, BinaryOp::MOD);
 #undef CASE
+            default:
+                throw std::runtime_error("parser error");
             }
             int q = isRightAssociative(token) ? getPrecedence(token) : 1 + getPrecedence(token);
             advance();
