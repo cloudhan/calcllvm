@@ -3,6 +3,8 @@
 #include "ToSExpr.h"
 #include <gtest/gtest.h>
 
+using llvm::dyn_cast;
+
 TEST(ParserTest, number) {
 #define DO_TEST(text, type, literal)                                                                                   \
     [&]() {                                                                                                            \
@@ -10,11 +12,11 @@ TEST(ParserTest, number) {
         Parser parser(lexer);                                                                                          \
         auto e = parser.parse();                                                                                       \
         EXPECT_NE(e, nullptr);                                                                                         \
-        auto n = dynamic_cast<Number*>(e);                                                                             \
+        auto n = dyn_cast<Number>(e);                                                                                  \
         EXPECT_NE(n, nullptr);                                                                                         \
-        EXPECT_EQ(n->getKind(), Factor::NUMBER);                                                                       \
+        EXPECT_EQ(n->getKind(), AST::Kind::Number);                                                                    \
         EXPECT_EQ(n->getType(), type);                                                                                 \
-        EXPECT_EQ(n->getValueLiteralStr(), literal);                                                                   \
+        EXPECT_EQ(n->getValue(), literal);                                                                             \
     }()
 
     DO_TEST("1", Number::INT, "1");
@@ -29,10 +31,10 @@ TEST(ParserTest, ident) {
     Parser parser(lexer);
     auto e = parser.parse();
     EXPECT_NE(e, nullptr);
-    auto n = dynamic_cast<Factor*>(e);
+    auto n = dyn_cast<Ident>(e);
     EXPECT_NE(n, nullptr);
-    EXPECT_EQ(n->getKind(), Factor::IDENT);
-    EXPECT_TRUE(n->getValueLiteralStr().equals(text));
+    EXPECT_EQ(n->getKind(), AST::Kind::Ident);
+    EXPECT_TRUE(n->getName().equals(text));
 }
 
 TEST(ParserTest, unary_op) {
@@ -42,9 +44,9 @@ TEST(ParserTest, unary_op) {
         Parser parser(lexer);                                                                                          \
         auto e = parser.parse();                                                                                       \
         EXPECT_NE(e, nullptr);                                                                                         \
-        auto uo = dynamic_cast<UnaryOp*>(e);                                                                           \
+        auto uo = dyn_cast<UnaryOp>(e);                                                                                \
         EXPECT_NE(uo, nullptr);                                                                                        \
-        EXPECT_EQ(uo->getKind(), Factor::UnaryOp);                                                                     \
+        EXPECT_EQ(uo->getKind(), AST::Kind::UnaryOp);                                                                  \
         EXPECT_EQ(uo->getOp(), op);                                                                                    \
         ToSExprVisitor scvt;                                                                                           \
         auto my_sexpr = scvt.convert(e);                                                                               \
@@ -69,9 +71,9 @@ TEST(ParserTest, binary_op) {
         Parser parser(lexer);                                                                                          \
         auto e = parser.parse();                                                                                       \
         EXPECT_NE(e, nullptr);                                                                                         \
-        auto bo = dynamic_cast<BinaryOp*>(e);                                                                          \
+        auto bo = dyn_cast<BinaryOp>(e);                                                                               \
         EXPECT_NE(bo, nullptr);                                                                                        \
-        EXPECT_EQ(bo->getKind(), Factor::BinaryOp);                                                                    \
+        EXPECT_EQ(bo->getKind(), AST::Kind::BinaryOp);                                                                 \
         EXPECT_EQ(bo->getOp(), op);                                                                                    \
         ToSExprVisitor scvt;                                                                                           \
         auto my_sexpr = scvt.convert(e);                                                                               \
@@ -95,7 +97,7 @@ TEST(ParserTest, binary_op_compound) {
         Parser parser(lexer);                                                                                          \
         auto e = parser.parse();                                                                                       \
         EXPECT_NE(e, nullptr);                                                                                         \
-        auto bo = dynamic_cast<BinaryOp*>(e);                                                                          \
+        auto bo = dyn_cast<BinaryOp>(e);                                                                               \
         EXPECT_NE(bo, nullptr);                                                                                        \
         ToSExprVisitor scvt;                                                                                           \
         auto my_sexpr = scvt.convert(e);                                                                               \
@@ -123,7 +125,7 @@ TEST(ParserTest, func_call) {
         Parser parser(lexer);                                                                                          \
         auto e = parser.parse();                                                                                       \
         EXPECT_NE(e, nullptr);                                                                                         \
-        auto fc = dynamic_cast<FuncCall*>(e);                                                                          \
+        auto fc = dyn_cast<FuncCall>(e);                                                                               \
         EXPECT_NE(fc, nullptr);                                                                                        \
         EXPECT_TRUE(fc->getName().equals(name));                                                                       \
         ToSExprVisitor v;                                                                                              \

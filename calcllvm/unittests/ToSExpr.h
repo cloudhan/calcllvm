@@ -16,14 +16,12 @@ public:
         return result.str();
     }
 
-    void visit(Factor& e) override {
-        if (e.getKind() == Factor::IDENT) {
-            result << e.getValueLiteralStr().str();
-        }
+    void visit(Ident& e) override {
+        result << e.getName().str();
     }
 
     void visit(Number& e) override {
-        result << e.getValueLiteralStr().str();
+        result << e.getValue().str();
     }
 
     void visit(UnaryOp& e) override {

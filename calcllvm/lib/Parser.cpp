@@ -134,7 +134,7 @@ Expr* Parser::parseFactor() {
         } else {
             auto t = token;
             advance();
-            return new Factor(Factor::IDENT, t.text);
+            return new Ident(t.text);
         }
     }
 

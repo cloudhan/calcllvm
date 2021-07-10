@@ -44,12 +44,6 @@ public:
         irBuilder.CreateRet(llvm::ConstantInt::get(i32, 0, true));
     }
 
-    void visit(Factor& e) override {
-        if (e.getKind() != Factor::IDENT) {
-            throw std::runtime_error("compile error, visited factor should only be identifier");
-        }
-    }
-
     void visit(UnaryOp& e) override {
         e.getExpr()->accept(*this);
 
@@ -97,26 +91,25 @@ public:
         if (op == BinaryOp::PLUS) {
             if (lhsType == ResultType::FLOAT) {
                 result = irBuilder.CreateFAdd(lhs, rhs);
-            }
-            else {
+            } else {
                 result = irBuilder.CreateAdd(lhs, rhs);
             }
         }
-
-
     }
 
     void visit(FuncCall& e) override {}
 
+    void visit(Ident& e) override {}
+
     void visit(Number& e) override {
         if (e.getType() == Number::INT) {
             int64_t v;
-            e.getValueLiteralStr().getAsInteger(10, v);
+            e.getValue().getAsInteger(10, v);
             result = llvm::ConstantInt::get(i64, v);
             result_type = ResultType::INT;
         } else if (e.getType() == Number::FLOAT) {
             double v;
-            e.getValueLiteralStr().getAsDouble(v);
+            e.getValue().getAsDouble(v);
             result = llvm::ConstantFP::get(f64, v);
             result_type = ResultType::FLOAT;
         }

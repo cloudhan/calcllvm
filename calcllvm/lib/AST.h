@@ -31,10 +31,11 @@ class AST;
 class Expr;
 class Term;
 class Factor;
-class Number;
 class UnaryOp;
 class BinaryOp;
 class FuncCall;
+class Ident;
+class Number;
 
 struct ASTVisitor {
     virtual ~ASTVisitor() {}
@@ -42,60 +43,80 @@ struct ASTVisitor {
     virtual void visit(AST&) {}
     virtual void visit(Expr&) {}
     virtual void visit(Term&) {}
-    virtual void visit(Factor&) = 0;
-    virtual void visit(Number&) = 0;
+    virtual void visit(Factor&) {};
     virtual void visit(UnaryOp&) = 0;
     virtual void visit(BinaryOp&) = 0;
     virtual void visit(FuncCall&) = 0;
+    virtual void visit(Ident&) = 0;
+    virtual void visit(Number&) = 0;
 };
 
 class AST {
 public:
-    virtual ~AST() {}
-    virtual void accept(ASTVisitor& v) = 0;
-};
-
-class Expr : public AST {
-public:
-    void accept(ASTVisitor&) override {
-        throw std::runtime_error("visitor should properly implement all required visit functions");
-    };
-};
-
-class Term : public Expr {};
-
-class Factor : public Term {
-public:
-    enum Kind {
-        IDENT,
-        NUMBER,
+    enum class Kind {
+        AST,
+        Expr,
+        Term,
+        Factor,
         UnaryOp,
         BinaryOp,
-    };
+        FuncCall,
+        Number,
+        Ident,
+    } class_kind;
 
 private:
-    Kind kind;
-    llvm::StringRef value;
+    const Kind kind;
 
 public:
-    Factor(Kind factor_kind, llvm::StringRef value)
-        : kind(factor_kind)
-        , value(value) {}
+    AST(Kind kind)
+        : kind(kind) {}
 
-    Factor(Kind factor_kind)
-        : Factor(factor_kind, "") {}
+    virtual ~AST() {}
+
+    static bool classof(const AST* node) {
+        return node->getKind() == Kind::AST;
+    }
 
     Kind getKind() const {
         return kind;
     }
 
-    llvm::StringRef getValueLiteralStr() {
-        return value;
+    virtual void accept(ASTVisitor& v) = 0;
+};
+
+class Expr : public AST {
+public:
+    Expr(Kind kind)
+        : AST(kind) {}
+
+    static bool classof(const AST* node) {
+        return node->getKind() == Kind::Expr;
     }
 
-    void accept(ASTVisitor& v) override {
-        v.visit(*this);
+    void accept(ASTVisitor&) override {
+        throw std::runtime_error("visitor should properly implement all required visit functions");
     };
+};
+
+class Term : public Expr {
+public:
+    Term(Kind kind)
+        : Expr(kind) {}
+
+    static bool classof(const AST* node) {
+        return node->getKind() == Kind::Term;
+    }
+};
+
+class Factor : public Term {
+public:
+    Factor(Kind kind)
+        : Term(kind) {}
+
+    static bool classof(const AST* node) {
+        return node->getKind() == Kind::Factor;
+    }
 };
 
 class UnaryOp : public Factor {
@@ -112,9 +133,13 @@ private:
 
 public:
     UnaryOp(Op op, Expr* e)
-        : Factor(Factor::UnaryOp)
+        : Factor(Kind::UnaryOp)
         , op(op)
         , e(e) {}
+
+    static bool classof(const AST* node) {
+        return node->getKind() == Kind::UnaryOp;
+    }
 
     Op getOp() {
         return op;
@@ -147,10 +172,14 @@ private:
 
 public:
     BinaryOp(Op op, Expr* lhs, Expr* rhs)
-        : Factor(Factor::BinaryOp)
+        : Factor(Kind::BinaryOp)
         , op(op)
         , lhs(lhs)
         , rhs(rhs) {}
+
+    static bool classof(const AST* node) {
+        return node->getKind() == Kind::BinaryOp;
+    }
 
     Op getOp() const {
         return op;
@@ -175,8 +204,13 @@ class FuncCall : public Expr {
 
 public:
     FuncCall(llvm::StringRef ident, Expr* e)
-        : name(ident)
+        : Expr(Kind::FuncCall)
+        , name(ident)
         , param(e) {}
+
+    static bool classof(const AST* node) {
+        return node->getKind() == Kind::FuncCall;
+    }
 
     llvm::StringRef getName() const {
         return name;
@@ -200,14 +234,45 @@ public:
 
 private:
     Type t;
+    llvm::StringRef value;
 
 public:
     Number(Type t, llvm::StringRef v)
-        : Factor(Factor::NUMBER, v)
-        , t(t) {}
+        : Factor(Kind::Number)
+        , t(t)
+        , value(v) {}
+
+    static bool classof(const AST* node) {
+        return node->getKind() == Kind::Number;
+    }
 
     Type getType() {
         return t;
+    }
+
+    llvm::StringRef getValue() {
+        return value;
+    }
+
+    void accept(ASTVisitor& v) override {
+        v.visit(*this);
+    };
+};
+
+class Ident : public Factor {
+    llvm::StringRef name;
+
+public:
+    Ident(llvm::StringRef name)
+        : Factor(Kind::Ident)
+        , name(name) {}
+
+    static bool classof(const AST* node) {
+        return node->getKind() == Kind::Ident;
+    }
+
+    llvm::StringRef getName() {
+        return name;
     }
 
     void accept(ASTVisitor& v) override {

@@ -152,12 +152,8 @@ public:
     InterpretVisitor()
         : eval_result(std::numeric_limits<double>::quiet_NaN()) {}
 
-    void visit(Factor& e) override {
-        if (e.getKind() != Factor::IDENT) {
-            throw std::runtime_error("interpret error, visited factor should only be identifier");
-        }
-
-        auto ident = e.getValueLiteralStr().str();
+    void visit(Ident& e) override {
+        auto ident = e.getName().str();
         auto it = env.find(ident);
         if (it == env.end()) {
             std::array<char, 256> buffer{};
@@ -216,12 +212,12 @@ public:
     void visit(Number& e) override {
         if (e.getType() == Number::INT) {
             int64_t v;
-            e.getValueLiteralStr().getAsInteger(10, v);
-            eval_result = Value();
+            e.getValue().getAsInteger(10, v);
+            eval_result = Value(v);
         }
         else if (e.getType() == Number::FLOAT) {
             double v;
-            e.getValueLiteralStr().getAsDouble(v);
+            e.getValue().getAsDouble(v);
             eval_result = Value(v);
         }
     }
