@@ -214,10 +214,16 @@ public:
     }
 
     void visit(Number& e) override {
-        if (e.getType() == Number::INT)
-            eval_result = Value(std::stoll(e.getValueLiteralStr().str()));
-        else if (e.getType() == Number::FLOAT)
-            eval_result = Value(std::stod(e.getValueLiteralStr().str()));
+        if (e.getType() == Number::INT) {
+            int64_t v;
+            e.getValueLiteralStr().getAsInteger(10, v);
+            eval_result = Value();
+        }
+        else if (e.getType() == Number::FLOAT) {
+            double v;
+            e.getValueLiteralStr().getAsDouble(v);
+            eval_result = Value(v);
+        }
     }
 
     void visit(FuncCall& e) override {
