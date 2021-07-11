@@ -32,14 +32,27 @@ public:
         auto i32 = llvm::Type::getInt32Ty(ctx);
         auto i8 = llvm::Type::getInt8Ty(ctx);
 
-        llvm::FunctionType* mainFuncType =
-            llvm::FunctionType::get(i32, {i32, i8->getPointerTo()->getPointerTo()}, /*isVarArg=*/false);
-        llvm::Function* mainFunc =
-            llvm::Function::Create(mainFuncType, llvm::GlobalValue::ExternalLinkage, "main", mod.get());
-        llvm::BasicBlock* basicBlock = llvm::BasicBlock::Create(ctx, "entry", mainFunc);
+        auto i8PtrPtr = i8->getPointerTo()->getPointerTo();
+        auto mainFuncType = llvm::FunctionType::get(i32, {i32, i8PtrPtr}, /*isVarArg=*/false);
+        auto mainFunc = llvm::Function::Create(mainFuncType, llvm::GlobalValue::ExternalLinkage, "main", mod.get());
+        auto basicBlock = llvm::BasicBlock::Create(ctx, "entry", mainFunc);
         irBuilder.SetInsertPoint(basicBlock);
 
         expr->accept(*this);
+
+        decltype(f64) inputType;
+        std::string funcName;
+        if (result_type == ResultType::FLOAT) {
+            inputType = f64;
+            funcName = "outputf";
+        } else {
+            inputType = i64;
+            funcName = "outputi";
+        }
+        auto outputFuncType = llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {inputType}, false);
+        auto outputFunc =
+            llvm::Function::Create(outputFuncType, llvm::GlobalValue::ExternalLinkage, funcName, mod.get());
+        irBuilder.CreateCall(outputFuncType, outputFunc, result);
 
         irBuilder.CreateRet(llvm::ConstantInt::get(i32, 0, true));
     }
@@ -74,25 +87,53 @@ public:
         llvm::Value* rhs = result;
         auto rhsType = result_type;
 
-        // prompt to float
+        // prompt to f64, only i64 to f64 is allowed
         if (lhsType != rhsType) {
-            if (rhsType == ResultType::INT) {
+            if (lhsType == ResultType::INT) {
                 lhsType = ResultType::FLOAT;
-                lhs = irBuilder.CreateFPCast(lhs, f64);
+                lhs = irBuilder.CreateSIToFP(lhs, f64);
             }
 
             if (rhsType == ResultType::INT) {
                 rhsType = ResultType::FLOAT;
-                rhs = irBuilder.CreateFPCast(rhs, f64);
+                rhs = irBuilder.CreateSIToFP(rhs, f64);
             }
         }
 
         auto op = e.getOp();
-        if (op == BinaryOp::PLUS) {
+
+#define IF_OP_THEN(bop, float_func, int_func)                                                                          \
+    if (op == bop) {                                                                                                   \
+        if (lhsType == ResultType::FLOAT) {                                                                            \
+            result = irBuilder.float_func(lhs, rhs);                                                                   \
+        } else {                                                                                                       \
+            result = irBuilder.int_func(lhs, rhs);                                                                     \
+        }                                                                                                              \
+        return;                                                                                                        \
+    }
+
+        IF_OP_THEN(BinaryOp::PLUS, CreateFAdd, CreateAdd);
+        IF_OP_THEN(BinaryOp::MINUS, CreateFSub, CreateSub);
+        IF_OP_THEN(BinaryOp::MUL, CreateFMul, CreateMul);
+        IF_OP_THEN(BinaryOp::DIV, CreateFDiv, CreateSDiv);
+
+        if (op == BinaryOp::MOD) {
             if (lhsType == ResultType::FLOAT) {
-                result = irBuilder.CreateFAdd(lhs, rhs);
+                throw std::runtime_error("mod only works on integer");
             } else {
-                result = irBuilder.CreateAdd(lhs, rhs);
+                result = irBuilder.CreateSRem(lhs, rhs);
+            }
+        }
+
+        if (op == BinaryOp::POW) {
+            if (lhsType == ResultType::FLOAT) {
+                auto powFuncType = llvm::FunctionType::get(f64, {f64, f64}, false);
+                auto powFunc =
+                    llvm::Function::Create(powFuncType, llvm::GlobalValue::ExternalLinkage, "powi", mod.get());
+                result = irBuilder.CreateCall(powFuncType, powFunc, {lhs, rhs});
+                result_type = ResultType::FLOAT;
+            } else {
+                throw std::runtime_error("NotImplemented");
             }
         }
     }

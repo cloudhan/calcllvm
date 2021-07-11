@@ -164,8 +164,7 @@ public:
             Value v;
             if (it == buffer.end()) {
                 v = std::atoll(buffer.data());
-            }
-            else {
+            } else {
                 v = std::stod(buffer.data());
             }
 
@@ -214,8 +213,7 @@ public:
             int64_t v;
             e.getValue().getAsInteger(10, v);
             eval_result = Value(v);
-        }
-        else if (e.getType() == Number::FLOAT) {
+        } else if (e.getType() == Number::FLOAT) {
             double v;
             e.getValue().getAsDouble(v);
             eval_result = Value(v);

@@ -43,7 +43,7 @@ struct ASTVisitor {
     virtual void visit(AST&) {}
     virtual void visit(Expr&) {}
     virtual void visit(Term&) {}
-    virtual void visit(Factor&) {};
+    virtual void visit(Factor&) {}
     virtual void visit(UnaryOp&) = 0;
     virtual void visit(BinaryOp&) = 0;
     virtual void visit(FuncCall&) = 0;
@@ -90,10 +90,6 @@ public:
     Expr(Kind kind)
         : AST(kind) {}
 
-    static bool classof(const AST* node) {
-        return node->getKind() == Kind::Expr;
-    }
-
     void accept(ASTVisitor&) override {
         throw std::runtime_error("visitor should properly implement all required visit functions");
     };
@@ -103,20 +99,12 @@ class Term : public Expr {
 public:
     Term(Kind kind)
         : Expr(kind) {}
-
-    static bool classof(const AST* node) {
-        return node->getKind() == Kind::Term;
-    }
 };
 
 class Factor : public Term {
 public:
     Factor(Kind kind)
         : Term(kind) {}
-
-    static bool classof(const AST* node) {
-        return node->getKind() == Kind::Factor;
-    }
 };
 
 class UnaryOp : public Factor {
