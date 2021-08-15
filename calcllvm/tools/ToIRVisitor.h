@@ -40,7 +40,8 @@ public:
 
         expr->accept(*this);
 
-        decltype(f64) inputType;
+        // print the value
+        llvm::Type* inputType;
         std::string funcName;
         if (result_type == ResultType::FLOAT) {
             inputType = f64;
@@ -49,10 +50,7 @@ public:
             inputType = i64;
             funcName = "outputi";
         }
-        auto outputFuncType = llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {inputType}, false);
-        auto outputFunc =
-            llvm::Function::Create(outputFuncType, llvm::GlobalValue::ExternalLinkage, funcName, mod.get());
-        irBuilder.CreateCall(outputFuncType, outputFunc, result);
+        createExternalCall(funcName, llvm::Type::getVoidTy(ctx), {inputType}, {result});
 
         irBuilder.CreateRet(llvm::ConstantInt::get(i32, 0, true));
     }
@@ -127,10 +125,7 @@ public:
 
         if (op == BinaryOp::POW) {
             if (lhsType == ResultType::FLOAT) {
-                auto powFuncType = llvm::FunctionType::get(f64, {f64, f64}, false);
-                auto powFunc =
-                    llvm::Function::Create(powFuncType, llvm::GlobalValue::ExternalLinkage, "powi", mod.get());
-                result = irBuilder.CreateCall(powFuncType, powFunc, {lhs, rhs});
+                result = createExternalCall("powi", f64, {f64, f64}, {lhs, rhs});
                 result_type = ResultType::FLOAT;
             } else {
                 throw std::runtime_error("NotImplemented");
@@ -138,7 +133,16 @@ public:
         }
     }
 
-    void visit(FuncCall& e) override {}
+    void visit(FuncCall& e) override {
+        if (result_type == ResultType::INT) {
+            result_type = ResultType::FLOAT;
+            result = irBuilder.CreateSIToFP(result, f64);
+        }
+
+        auto name = e.getName();
+        if (name.equals("sin") || name.equals("cos") || name.equals("tan") || name.equals("cot")) {
+        }
+    }
 
     void visit(Ident& e) override {}
 
@@ -154,5 +158,13 @@ public:
             result = llvm::ConstantFP::get(f64, v);
             result_type = ResultType::FLOAT;
         }
+    }
+
+private:
+    llvm::Value* createExternalCall(const std::string& funcName, llvm::Type* retType,
+                                    llvm::ArrayRef<llvm::Type*> inType, llvm::ArrayRef<llvm::Value*> input) {
+        auto funcType = llvm::FunctionType::get(retType, inType, false);
+        auto func = llvm::Function::Create(funcType, llvm::GlobalValue::ExternalLinkage, funcName, mod.get());
+        return irBuilder.CreateCall(funcType, func, input);
     }
 };
