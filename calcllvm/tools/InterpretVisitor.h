@@ -3,6 +3,7 @@
 #include "AST.h"
 #include "Lexer.h"
 
+#include <cmath>
 #include <cstdio>
 #include <limits>
 #include <unordered_map>
@@ -136,7 +137,7 @@ Value factorial(Value v) {
         throw std::runtime_error("factorial value error");
     }
     if (i == 0) {
-        return Value(1LL);
+        return Value(static_cast<int64_t>(1LL));
     }
     int64_t acc = 1;
     for (int64_t j = 1; j <= i; j++) {
@@ -163,7 +164,7 @@ public:
             auto it = std::find(buffer.begin(), buffer.end(), '.');
             Value v;
             if (it == buffer.end()) {
-                v = std::atoll(buffer.data());
+                v = static_cast<int64_t>(std::atoll(buffer.data()));
             } else {
                 v = std::stod(buffer.data());
             }

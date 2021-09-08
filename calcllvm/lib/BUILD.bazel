@@ -1,0 +1,17 @@
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "libcalcllvm",
+    srcs = glob([
+        "*.cpp",
+    ]),
+    hdrs = glob([
+        "*.h",
+    ]),
+    deps = [
+        "@llvm-project//llvm:Core",
+        "@llvm-project//llvm:Support",
+    ],
+)

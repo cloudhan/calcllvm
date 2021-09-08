@@ -1,0 +1,12 @@
+cc_test(
+    name = "calctest",
+    srcs = glob([
+        "*.cpp",
+        "*.h",
+    ]),
+    copts = ["-Icalcllvm/lib"],
+    deps = [
+        "//calcllvm/lib:libcalcllvm",
+        "@llvm-project//llvm:gtest_main",
+    ],
+)

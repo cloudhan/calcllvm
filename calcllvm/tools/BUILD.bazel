@@ -1,0 +1,23 @@
+HDRS = glob(["*.h"])
+
+cc_binary(
+    name = "calcc",
+    srcs = [
+        "Compiler.cpp",
+    ] + HDRS,
+    copts = ["-Icalcllvm/lib"],
+    deps = [
+        "//calcllvm/lib:libcalcllvm",
+    ],
+)
+
+cc_binary(
+    name = "calci",
+    srcs = [
+        "Interpreter.cpp",
+    ] + HDRS,
+    copts = ["-Icalcllvm/lib"],
+    deps = [
+        "//calcllvm/lib:libcalcllvm",
+    ],
+)
