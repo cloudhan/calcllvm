@@ -174,6 +174,10 @@ TEST(ParserTest, complex) {
         EXPECT_EQ(sexpr, my_sexpr);                                                                                    \
     }()
 
+    DO_TEST("sin(cos(1.0)) + abs(1)", "(+ (sin (cos 1.0)) (abs 1))");
+
+    DO_TEST("arccot(cot(1.0)) + abs(1)", "(+ (arccot (cot 1.0)) (abs 1))");
+
     DO_TEST("1+2-sqrt(4)", "(- (+ 1 2) (sqrt 4))");
 
     DO_TEST("(1+2-z!) %   4 + (6*b/7.0) ^ 8 - sqrt(9.0) ",

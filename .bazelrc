@@ -3,3 +3,8 @@ build --verbose_failures
 
 build --cxxopt=-std=c++14
 build --host_cxxopt=-std=c++14
+
+build --incompatible_strict_action_env=true
+
+build:dbg --strip=never
+build:dbg --per_file_copt=+calcllvm.*@-g

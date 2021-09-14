@@ -1,3 +1,9 @@
+load("@rules_python//python:defs.bzl", "py_binary")
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
 HDRS = glob(["*.h"])
 
 cc_binary(
@@ -20,4 +26,16 @@ cc_binary(
     deps = [
         "//calcllvm/lib:libcalcllvm",
     ],
+)
+
+py_binary(
+    name = "calcc_driver",
+    srcs = ["compiler_driver.py"],
+    data = [
+        ":calcc",
+        "//calcllvm/runtime:runtime.c",
+        "@llvm-project//clang:clang",
+        "@llvm-project//llvm:llc",
+    ],
+    main = "compiler_driver.py",
 )

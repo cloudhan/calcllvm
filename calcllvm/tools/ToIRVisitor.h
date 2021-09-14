@@ -5,6 +5,10 @@
 
 #include "llvm/IR/IRBuilder.h"
 
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 class ToIRVisitor : public ASTVisitor {
     std::shared_ptr<llvm::Module> mod;
     llvm::IRBuilder<> irBuilder;
@@ -18,10 +22,14 @@ class ToIRVisitor : public ASTVisitor {
     llvm::Type* i64;
     llvm::Type* f64;
 
+    std::vector<std::string> env;
+    std::unordered_map<std::string, llvm::Function*> functions;
+
 public:
-    ToIRVisitor(std::shared_ptr<llvm::Module> mod)
+    ToIRVisitor(const std::shared_ptr<llvm::Module>& mod)
         : mod(mod)
-        , irBuilder(mod->getContext()) {
+        , irBuilder(mod->getContext())
+        , env() {
         auto& ctx = mod->getContext();
         i64 = llvm::Type::getInt64Ty(ctx);
         f64 = llvm::Type::getDoubleTy(ctx);
@@ -45,12 +53,12 @@ public:
         std::string funcName;
         if (result_type == ResultType::FLOAT) {
             inputType = f64;
-            funcName = "outputf";
+            funcName = "print_f";
         } else {
             inputType = i64;
-            funcName = "outputi";
+            funcName = "print_i";
         }
-        createExternalCall(funcName, llvm::Type::getVoidTy(ctx), {inputType}, {result});
+        callExternal(funcName, llvm::Type::getVoidTy(ctx), {inputType}, {result});
 
         irBuilder.CreateRet(llvm::ConstantInt::get(i32, 0, true));
     }
@@ -101,11 +109,13 @@ public:
         auto op = e.getOp();
 
 #define IF_OP_THEN(bop, float_func, int_func)                                                                          \
-    if (op == bop) {                                                                                                   \
+    if (op == (bop)) {                                                                                                 \
         if (lhsType == ResultType::FLOAT) {                                                                            \
             result = irBuilder.float_func(lhs, rhs);                                                                   \
+            result_type = ResultType::FLOAT;                                                                           \
         } else {                                                                                                       \
             result = irBuilder.int_func(lhs, rhs);                                                                     \
+            result_type = ResultType::INT;                                                                             \
         }                                                                                                              \
         return;                                                                                                        \
     }
@@ -124,24 +134,66 @@ public:
         }
 
         if (op == BinaryOp::POW) {
-            if (lhsType == ResultType::FLOAT) {
-                result = createExternalCall("powi", f64, {f64, f64}, {lhs, rhs});
-                result_type = ResultType::FLOAT;
+            if (lhsType == ResultType::INT && rhsType == ResultType::INT) {
+                result = callExternal("powi", i64, {i64, i64}, {lhs, rhs});
+                result_type = ResultType::INT;
             } else {
-                throw std::runtime_error("NotImplemented");
+                result = callExternal("pow", f64, {f64, f64}, {lhs, rhs});
+                result_type = ResultType::FLOAT;
             }
         }
     }
 
     void visit(FuncCall& e) override {
-        if (result_type == ResultType::INT) {
-            result_type = ResultType::FLOAT;
-            result = irBuilder.CreateSIToFP(result, f64);
-        }
+        e.getParam()->accept(*this);
 
         auto name = e.getName();
-        if (name.equals("sin") || name.equals("cos") || name.equals("tan") || name.equals("cot")) {
+
+        // only abs supports int input
+        if (result_type == ResultType::INT) {
+            if (name.equals("abs")) {
+                result = callExternal("llabs", i64, {i64}, {result});
+                return;
+            } else {
+                result = irBuilder.CreateSIToFP(result, f64);
+                result_type = ResultType::FLOAT;
+            }
         }
+
+        static std::unordered_map<std::string, std::string> calcc_func_to_math_func{
+            {"abs", "fabs"},    //
+            {"exp", "exp"},     //
+            {"log2", "log2"},   //
+            {"lg", "log10"},    //
+            {"ln", "log"},      //
+            {"sin", "sin"},     //
+            {"cos", "cos"},     //
+            {"tan", "tan"},     //
+            {"arcsin", "asin"}, //
+            {"arccos", "acos"}, //
+            {"arctan", "atan"}, //
+            {"sqrt", "sqrt"},   //
+        };
+        auto it = calcc_func_to_math_func.find(name.str());
+        if (it != calcc_func_to_math_func.end()) {
+            result = callExternal(it->second, f64, {f64}, {result});
+            return;
+        }
+
+        auto one = llvm::ConstantFP::get(f64, 1.0);
+        if (name.equals("cot")) {
+            result = callExternal("tan", f64, {f64}, {result});
+            result = irBuilder.CreateFDiv(one, result);
+            return;
+        }
+
+        if (name.equals("arccot")) {
+            result = irBuilder.CreateFDiv(one, result);
+            result = callExternal("atan", f64, {f64}, {result});
+            return;
+        }
+
+        throw std::runtime_error("never reach");
     }
 
     void visit(Ident& e) override {}
@@ -161,10 +213,18 @@ public:
     }
 
 private:
-    llvm::Value* createExternalCall(const std::string& funcName, llvm::Type* retType,
-                                    llvm::ArrayRef<llvm::Type*> inType, llvm::ArrayRef<llvm::Value*> input) {
+    llvm::Value* callExternal(const std::string& funcName, llvm::Type* retType, llvm::ArrayRef<llvm::Type*> inType,
+                              llvm::ArrayRef<llvm::Value*> input) {
         auto funcType = llvm::FunctionType::get(retType, inType, false);
-        auto func = llvm::Function::Create(funcType, llvm::GlobalValue::ExternalLinkage, funcName, mod.get());
+        auto it = functions.find(funcName);
+        llvm::Function* func;
+        if (it == functions.end()) {
+            func = llvm::Function::Create(funcType, llvm::GlobalValue::ExternalLinkage, funcName, mod.get());
+            functions[funcName] = func;
+        } else {
+            func = it->second;
+        }
+
         return irBuilder.CreateCall(funcType, func, input);
     }
 };
