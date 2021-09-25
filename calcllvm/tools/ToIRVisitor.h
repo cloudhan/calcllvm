@@ -22,8 +22,14 @@ class ToIRVisitor : public ASTVisitor {
     llvm::Type* i64;
     llvm::Type* f64;
 
-    std::vector<std::string> env;
+    std::unordered_map<std::string, int> env; // name to index
     std::unordered_map<std::string, llvm::Function*> functions;
+
+    llvm::BasicBlock* mainFuncPrelude;
+    llvm::BasicBlock* mainFuncBody;
+
+    std::shared_ptr<llvm::GlobalVariable> globalNumValues;
+    std::shared_ptr<llvm::GlobalVariable> globalNames;
 
 public:
     ToIRVisitor(const std::shared_ptr<llvm::Module>& mod)
@@ -40,11 +46,20 @@ public:
         auto i32 = llvm::Type::getInt32Ty(ctx);
         auto i8 = llvm::Type::getInt8Ty(ctx);
 
+        globalNumValues = std::make_shared<llvm::GlobalVariable>(llvm::Type::getInt32Ty(ctx), /*isConstant=*/true,
+                                                                 llvm::GlobalVariable::AvailableExternallyLinkage);
+        globalNames = std::make_shared<llvm::GlobalVariable>(llvm::ArrayType::get(llvm::Type::getInt8PtrTy(ctx), 128),
+                                                             /*isConstant=*/true,
+                                                             llvm::GlobalVariable::AvailableExternallyLinkage);
+
         auto i8PtrPtr = i8->getPointerTo()->getPointerTo();
         auto mainFuncType = llvm::FunctionType::get(i32, {i32, i8PtrPtr}, /*isVarArg=*/false);
         auto mainFunc = llvm::Function::Create(mainFuncType, llvm::GlobalValue::ExternalLinkage, "main", mod.get());
-        auto basicBlock = llvm::BasicBlock::Create(ctx, "entry", mainFunc);
-        irBuilder.SetInsertPoint(basicBlock);
+        mainFuncPrelude = llvm::BasicBlock::Create(ctx, "prelude", mainFunc);
+        mainFuncBody = llvm::BasicBlock::Create(ctx, "body", mainFunc);
+        irBuilder.SetInsertPoint(mainFuncBody);
+
+
 
         expr->accept(*this);
 
@@ -196,7 +211,15 @@ public:
         throw std::runtime_error("never reach");
     }
 
-    void visit(Ident& e) override {}
+    void visit(Ident& e) override {
+        auto name = e.getName().str();
+        auto it = env.find(name);
+        if (it == env.end()) {
+            int index = env.size();
+            prependReads(name, index);
+            env[name] = static_cast<int>(index);
+        }
+    }
 
     void visit(Number& e) override {
         if (e.getType() == Number::INT) {
@@ -226,5 +249,11 @@ private:
         }
 
         return irBuilder.CreateCall(funcType, func, input);
+    }
+
+    void prependReads(const std::string& name, int index) {
+        irBuilder.SetInsertPoint(mainFuncPrelude);
+
+        irBuilder.SetInsertPoint(mainFuncBody);
     }
 };

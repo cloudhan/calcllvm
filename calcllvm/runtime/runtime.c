@@ -36,3 +36,29 @@ void print_i(int64_t v) {
 void print_f(double v) {
     printf("%lf\n", v);
 }
+
+struct Value {
+    // -1, if unintialized. 0 for int, 1 for float.
+    char type;
+    union {
+        int64_t i;
+        double f;
+    } v;
+};
+
+extern int num_values;
+extern char* names[128];
+static struct Value values[128];
+
+void set(int i, char type, int64_t bytes) {
+    values[i].type = type;
+    values[i].v.i = bytes;
+}
+
+int64_t get_int(int i) {
+    return values[i].v.i;
+}
+
+double get_fp(int i) {
+    return values[i].v.f;
+}
